@@ -1,0 +1,51 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Allow authenticated users to read and write their own data
+    match /users/{userId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Allow authenticated users to read and create posts
+    match /posts/{postId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null;
+      allow update, delete: if request.auth != null && resource.data.userId == request.auth.uid;
+    }
+    
+    // Allow authenticated users to read and apply for jobs
+    match /jobs/{jobId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null;
+      allow update, delete: if request.auth != null && resource.data.postedBy == request.auth.uid;
+    }
+    
+    // Allow users to read and write their own messages
+    match /messages/{messageId} {
+      allow read: if request.auth != null && (resource.data.senderId == request.auth.uid || resource.data.receiverId == request.auth.uid);
+      allow create: if request.auth != null;
+    }
+    
+    // Allow users to read and manage their own notifications
+    match /notifications/{notificationId} {
+      allow read: if request.auth != null && resource.data.userId == request.auth.uid;
+      allow write: if request.auth != null;
+    }
+    
+    // Allow users to manage their connections
+    match /connections/{connectionId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null;
+      allow update, delete: if request.auth != null && 
+        (resource.data.userId == request.auth.uid || resource.data.connectedUserId == request.auth.uid);
+    }
+
+    // For testing purposes, you might want to start with more permissive rules
+    // WARNING: Remove this in production!
+    match /{document=**} {
+      allow read, write: if request.auth != null;
+    }
+  }
+}
